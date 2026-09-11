@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { User, LogOut, AlertCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/genlayer/wallet";
-import { usePlayerPoints } from "@/lib/hooks/useFootballBets";
-import { success, error, userRejected } from "@/lib/utils/toast";
+import { error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
 import { Button } from "./ui/button";
 import {
@@ -30,8 +29,6 @@ export function AccountPanel() {
     disconnectWallet,
     switchWalletAccount,
   } = useWallet();
-
-  const { data: points = 0 } = usePlayerPoints(address);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState("");
@@ -108,7 +105,7 @@ export function AccountPanel() {
               Connect to GenLayer
             </DialogTitle>
             <DialogDescription>
-              Connect your MetaMask wallet to start betting
+              Connect your MetaMask wallet to verify the current title
             </DialogDescription>
           </DialogHeader>
 
@@ -181,25 +178,14 @@ export function AccountPanel() {
   // Connected state
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <div className="flex items-center gap-4">
-        <div className="brand-card px-4 py-2 flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-accent" />
+      <DialogTrigger asChild>
+        <button className="brand-card px-3 py-1.5 flex items-center gap-2.5 hover:border-primary/50 transition-colors">
+          <span className="w-4 h-4 rounded-full border-[1.5px] border-primary text-primary flex items-center justify-center text-[9px] leading-none shrink-0">✓</span>
+          <span className="font-mono text-xs">
             <AddressDisplay address={address} maxLength={12} />
-          </div>
-          <div className="h-4 w-px bg-white/10" />
-          <div className="flex items-center gap-1">
-            <span className="text-sm font-semibold text-accent">{points}</span>
-            <span className="text-xs text-muted-foreground">pts</span>
-          </div>
-        </div>
-
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
-            <User className="w-4 h-4" />
-          </Button>
-        </DialogTrigger>
-      </div>
+          </span>
+        </button>
+      </DialogTrigger>
 
       <DialogContent className="brand-card border-2">
         <DialogHeader>
@@ -215,11 +201,6 @@ export function AccountPanel() {
           <div className="brand-card p-4 space-y-2">
             <p className="text-sm text-muted-foreground">Your Address</p>
             <code className="text-sm font-mono break-all">{address}</code>
-          </div>
-
-          <div className="brand-card p-4 space-y-2">
-            <p className="text-sm text-muted-foreground">Your Points</p>
-            <p className="text-2xl font-bold text-accent">{points}</p>
           </div>
 
           <div className="brand-card p-4 space-y-2">

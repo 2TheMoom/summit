@@ -3,13 +3,13 @@
  */
 
 export interface Champion {
-  name: string;
+  headline: string;
   points: string;
   since: string;
 }
 
 export interface TitleHolder {
-  name: string;
+  headline: string;
   points: string;
   since: string;
   until: string;

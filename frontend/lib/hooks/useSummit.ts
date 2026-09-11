@@ -33,7 +33,7 @@ export function useCurrentChampion() {
 
   return useQuery<Champion, Error>({
     queryKey: ["currentChampion"],
-    queryFn: () => (contract ? contract.getCurrentChampion() : Promise.resolve({ name: "", points: "0", since: "0" })),
+    queryFn: () => (contract ? contract.getCurrentChampion() : Promise.resolve({ headline: "", points: "0", since: "0" })),
     refetchOnWindowFocus: true,
     staleTime: 2000,
     enabled: !!contract,

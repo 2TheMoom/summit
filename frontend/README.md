@@ -1,17 +1,12 @@
-# GenLayer Football Market
+# Summit Frontend
 
-Next.js frontend for GenLayer Football Market - AI-powered football match predictions on GenLayer blockchain.
+Next.js frontend for Summit - a live scoreboard-style readout of whoever's
+currently #1 on Hacker News, verified on GenLayer.
 
 ## Setup
 
 1. Install dependencies:
 
-**Using bun:**
-```bash
-bun install
-```
-
-**Using npm:**
 ```bash
 npm install
 ```
@@ -22,17 +17,11 @@ cp .env.example .env
 ```
 
 3. Configure environment variables:
-   - `NEXT_PUBLIC_CONTRACT_ADDRESS` - GenLayer Football Betting contract address
-   - `NEXT_PUBLIC_STUDIO_URL` - GenLayer Studio URL (default: https://studio.genlayer.com/api)
+   - `NEXT_PUBLIC_CONTRACT_ADDRESS` - Summit contract address
+   - `NEXT_PUBLIC_GENLAYER_RPC_URL` - GenLayer Bradbury RPC URL (default: https://rpc-bradbury.genlayer.com)
 
 ## Development
 
-**Using bun:**
-```bash
-bun dev
-```
-
-**Using npm:**
 ```bash
 npm run dev
 ```
@@ -41,13 +30,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Build
 
-**Using bun:**
-```bash
-bun run build
-bun start
-```
-
-**Using npm:**
 ```bash
 npm run build
 npm start
@@ -57,7 +39,7 @@ npm start
 
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type safety
-- **Tailwind CSS v4** - Styling with custom glass-morphism theme
+- **Tailwind CSS v4** - Styling, "Alpine Signal" theme
 - **genlayer-js** - GenLayer blockchain SDK
 - **TanStack Query (React Query)** - Data fetching and caching
 - **Radix UI** - Accessible component primitives
@@ -65,20 +47,10 @@ npm start
 
 ## Wallet Management
 
-The app uses GenLayer's account system:
-- **Create Account**: Generate a new private key
-- **Import Account**: Import existing private key
-- **Export Account**: Export your private key (secured)
-- **Disconnect**: Clear stored account data
-
-Accounts are stored in browser's localStorage for development convenience.
+The app connects via MetaMask to GenLayer's Bradbury testnet.
 
 ## Features
 
-- **Create Bets**: Create football match predictions with team names, game date, and predicted winner (Team 1, Team 2, or Draw)
-- **View Bets**: Real-time bet table with match details, predictions, status, and owners
-- **Resolve Bets**: Bet owners can resolve matches using GenLayer's AI to verify actual results
-- **Leaderboard**: Track top players by points earned from correct predictions
-- **Player Stats**: View your points and ranking in the community
-- **Glass-morphism UI**: Premium dark theme with OKLCH colors, backdrop blur effects, and smooth animations
-- **Real-time Updates**: Automatic data fetching with 3-second polling intervals via TanStack Query
+- **Live titleholder readout**: The current #1 Hacker News story and its point total, always in sync with the real page.
+- **Verify Now**: Anyone can trigger `refresh()` to re-check the live source.
+- **Succession timeline**: Past titleholders, archived on-chain with how long each held the top spot.

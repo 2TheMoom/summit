@@ -22,7 +22,7 @@ function toPlainObject(raw: any): Record<string, any> {
 function decodeChampion(raw: any): Champion {
   const obj = toPlainObject(raw);
   return {
-    name: String(obj.name ?? ""),
+    headline: String(obj.headline ?? ""),
     points: String(obj.points ?? "0"),
     since: String(obj.since ?? "0"),
   };
@@ -31,7 +31,7 @@ function decodeChampion(raw: any): Champion {
 function decodeTitleHolder(raw: any): TitleHolder {
   const obj = toPlainObject(raw);
   return {
-    name: String(obj.name ?? ""),
+    headline: String(obj.headline ?? ""),
     points: String(obj.points ?? "0"),
     since: String(obj.since ?? "0"),
     until: String(obj.until ?? "0"),

@@ -1,20 +1,54 @@
-# Sample GenLayer project
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/8Jm4v89VAu)
-[![Telegram](https://img.shields.io/badge/Telegram--T.svg?style=social&logo=telegram)](https://t.me/genlayer)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/yeagerai.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
-[![GitHub star chart](https://img.shields.io/github/stars/yeagerai/genlayer-project-boilerplate?style=social)](https://star-history.com/#yeagerai/genlayer-js)
+# Summit
 
 ## About
-This project includes the boilerplate code for a GenLayer use case implementation, specifically a football bets game.
+A GenLayer "living state" Intelligent Contract with no claimant, no dispute,
+and no payout - it just continuously mirrors one real-world fact: whichever
+story is currently ranked #1 on Hacker News's live front page. Anyone can
+call `refresh()`, which takes zero parameters. Validators independently
+render the one canonical page, extract who's currently at the top, and reach
+consensus via GenLayer's equivalence principle before state updates. Past
+titleholders are archived on-chain as a succession history.
+
+Unlike an adjudicated claim or an escrow-with-verdict, there's nothing here
+for a caller to submit or manipulate - `refresh()` only ever asks "what does
+this one page currently show," settled the same way any other nondet fact
+is settled in GenVM. Because no native value ever moves through this
+contract, it also sidesteps a currently-open GenLayer platform bug affecting
+`emit_transfer` (see [genlayerlabs/genvm-manager#20](https://github.com/genlayerlabs/genvm-manager/issues/20)),
+which has forced a documented "known limitation" section onto two other
+GenLayer projects from this account.
+
+### Why Hacker News, not something more novel
+The original design targeted GenLayer's own live points leaderboard
+(portal.genlayer.foundation/points) - mirroring who's currently the top
+contributor felt like a sharper pitch than a generic example. In practice
+that page is a 4MB+ client-rendered SPA with a reCAPTCHA script, and it
+repeatedly caused the GenVM leader to be terminated *before it even
+attempted the render* (confirmed via a minimal diagnostic contract and
+execution traces showing `web_module: { calls: 0 }`). The same diagnostic
+against Hacker News's plain server-rendered front page (~34KB, no JS)
+reached full validator consensus on the first attempt. The mechanic is
+identical either way; only the mirrored source changed.
+
+## Live deployment
+Deployed and verified on **GenLayer Bradbury Testnet** (chain ID 4221):
+- **Contract:** [`0x8483b855f34d84C2E6777a330F8882A50cb0fCB2`](https://explorer-bradbury.genlayer.com/address/0x8483b855f34d84C2E6777a330F8882A50cb0fCB2)
+- Verified via 10 passing direct-mode tests (`pytest tests/direct/`), covering
+  first-time crowning, same-titleholder point refreshes, handoffs with
+  history archiving, the refresh cooldown, and the no-identifiable-leader
+  guard.
+- Verified live end-to-end: `refresh()` correctly identified the real
+  current #1 Hacker News story and its point total, cross-checked directly
+  against the live page at the time.
 
 ## What's included
-- An example intelligent contract (Football Bets) with web access and LLM integration
-- **Direct mode tests** — fast, in-memory unit tests with web/LLM mocking (~ms per test)
-- **Integration tests** — full end-to-end tests against GenLayer Studio
+- `contracts/summit.py` — the Summit Intelligent Contract
+- `tests/direct/test_summit.py` — direct-mode tests (in-memory, mocked web/LLM)
 - **Contract linting** — static analysis to catch common contract issues before deployment
 - **CI pipeline** — GitHub Actions workflow for linting and direct tests
-- A production-ready Next.js 15 frontend with TypeScript, TanStack Query, and Radix UI
+- A Next.js 15 frontend (TypeScript, TanStack Query, Radix UI) - a live
+  scoreboard-style readout of the current titleholder, a succession
+  timeline of past titleholders, and a "Verify Now" trigger
 - Configuration file template and deployment scripts
 
 ## Requirements
@@ -26,19 +60,15 @@ This project includes the boilerplate code for a GenLayer use case implementatio
 
 ```
 contracts/              # Python intelligent contracts
+  summit.py              # Summit
 tests/
-  direct/               # Fast in-memory tests (no Studio required)
-    test_create_bet.py   # Bet creation logic
-    test_resolve_bet.py  # Bet resolution with web/LLM mocks
-    test_views.py        # Read-only view methods
-  integration/           # Full tests against GenLayer Studio
-    test_football_bets.py
-    fixtures.py          # Expected state fixtures
-frontend/               # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
-deploy/                 # TypeScript deployment scripts
-gltest.config.yaml      # Test runner network configuration
-pyproject.toml          # Python/pytest configuration
-.github/workflows/      # CI pipeline
+  direct/                # Fast in-memory tests (no Studio required)
+    test_summit.py
+frontend/                # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
+deploy/                  # TypeScript deployment scripts
+gltest.config.yaml       # Test runner network configuration
+pyproject.toml           # Python/pytest configuration
+.github/workflows/       # CI pipeline
 ```
 
 ## Quick Start
@@ -51,53 +81,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Lint your contracts
-
-Run the GenVM linter to catch issues before deployment:
+### 2. Lint the contract
 
 ```shell
-genvm-lint check contracts/football_bets.py
+genvm-lint check contracts/summit.py
 ```
 
-The linter catches:
-- Forbidden imports and non-deterministic calls
-- Invalid storage types (must use `TreeMap`, `DynArray`, `u256`, etc.)
-- Missing decorators and return type annotations
-- Non-deterministic operations outside equivalence principle blocks
-- And [20+ other rules](https://github.com/genlayerlabs/genvm-linter)
-
 ### 3. Run direct mode tests
-
-Direct mode tests run contracts in-memory without needing GenLayer Studio. They use mocks for web requests and LLM calls, giving you fast feedback (~milliseconds per test):
 
 ```shell
 pytest tests/direct/ -v
 ```
-
-Direct mode features used in these tests:
-- `direct_deploy("contracts/file.py")` — deploy contract in memory
-- `direct_vm.sender = address` — set transaction sender
-- `direct_vm.mock_web(pattern, response)` — mock HTTP/render calls
-- `direct_vm.mock_llm(pattern, response)` — mock LLM responses
-- `direct_vm.expect_revert("message")` — assert expected failures
-- `direct_vm.clear_mocks()` — reset mocks between calls
 
 ### 4. Deploy the contract
 
 1. Choose your network: `genlayer network`
 2. Deploy: `genlayer deploy` (runs the script in `/deploy/deployScript.ts`)
 
-### 5. Run integration tests
-
-Integration tests deploy the contract to GenLayer Studio and test with real consensus:
-
-```shell
-gltest tests/integration/ -v -s
-```
-
-These require GenLayer Studio running (local or hosted).
-
-### 6. Set up the frontend
+### 5. Set up the frontend
 
 1. Copy `frontend/.env.example` to `frontend/.env`
 2. Add your deployed contract address as `NEXT_PUBLIC_CONTRACT_ADDRESS`
@@ -111,26 +112,29 @@ npm run dev
 
 The app will be available at http://localhost:3000/.
 
-## How the Football Bets Contract Works
+## How Summit Works
 
-1. **Creating Bets**: Users bet on a football match by providing the game date, teams, and predicted winner.
-2. **Resolving Bets**: After the match, the contract fetches results from BBC Sport, uses an LLM to extract the score, and validates via the equivalence principle.
-3. **Points**: Correct predictions earn points. Users can query their points or the leaderboard.
+1. **`refresh()`** — callable by anyone, no arguments, no value. Validators
+   independently render `news.ycombinator.com` in a real browser
+   environment, ask an LLM to identify the current #1 story and its point
+   total, and reach consensus on the story's identity via the equivalence
+   principle (the point total is informational and can drift trivially
+   between independent reads, so only the story identity is consensus-
+   checked). A minimum interval between refreshes (default 5 minutes)
+   guards against wasted validator work, not against manipulation - there's
+   nothing to manipulate.
+2. **On a handoff** — the outgoing titleholder is archived to an on-chain
+   history log with how long they held the top spot, before the new
+   titleholder is crowned.
+3. **`get_current_champion` / `get_history` / `get_last_refresh_at`** — read
+   back the live state and succession history.
 
 ## Testing Strategy
 
 | Test Type | Command | Speed | Requires Studio |
 |-----------|---------|-------|-----------------|
-| **Lint** | `genvm-lint check contracts/*.py` | ~250ms | No |
+| **Lint** | `genvm-lint check contracts/summit.py` | ~250ms | No |
 | **Direct** | `pytest tests/direct/ -v` | ~ms/test | No |
-| **Integration** | `gltest tests/integration/ -v -s` | ~min/test | Yes |
-
-**Recommended workflow:**
-1. Lint after every contract change
-2. Run direct tests frequently during development
-3. Run integration tests before deployment to verify consensus behavior
-
-For AI coding agents (Claude Code, Cursor, etc.), the linter and direct tests provide the fast feedback loop needed for iterative development without requiring a running Studio instance.
 
 ## Community
 - **[Discord](https://discord.gg/8Jm4v89VAu)**: Discussions, support, and announcements
