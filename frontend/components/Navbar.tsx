@@ -2,6 +2,12 @@
 
 import { AccountPanel } from "./AccountPanel";
 import { LogoMark } from "./Logo";
+import { GENLAYER_CHAIN_ID, GENLAYER_NETWORK } from "@/lib/genlayer/client";
+
+// "GenLayer Bradbury Testnet" -> "Bradbury" for the compact badge below.
+const NETWORK_SHORT_NAME = GENLAYER_NETWORK.chainName
+  .replace(/^GenLayer\s+/i, "")
+  .replace(/\s+Testnet$/i, "");
 
 export function Navbar() {
   return (
@@ -21,7 +27,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-muted-foreground border border-border rounded-full px-2.5 py-1.5 bg-muted/40">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              Bradbury · 4221
+              {NETWORK_SHORT_NAME} · {GENLAYER_CHAIN_ID}
             </div>
             <AccountPanel />
           </div>

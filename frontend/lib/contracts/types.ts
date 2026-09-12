@@ -21,5 +21,3 @@ export interface TransactionReceipt {
   blockNumber?: number;
   [key: string]: any;
 }
-
-export const LEADERBOARD_SOURCE_URL = "https://portal.genlayer.foundation/points";

@@ -88,9 +88,23 @@ This result should be perfectly parsable by a JSON parser without errors.
             # Only the identity of #1 needs consensus - the point total is
             # informational and can drift by the time a validator re-reads
             # the live page, same as any other fast-moving nondet fact.
-            return my_result["headline"] == leaders_res.calldata["headline"]
+            # .get() (not []) guards against an LLM response that omits the
+            # key entirely - a schema deviation despite the prompt's format
+            # instructions, which would otherwise raise an uncaught KeyError
+            # here instead of surfacing as refresh()'s clean UserError.
+            return my_result.get("headline") == leaders_res.calldata.get("headline")
 
         return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+
+    def _parse_points(self, raw) -> int:
+        """Tolerantly parses the LLM's reported point total. Despite the
+        prompt asking for "a plain integer," an LLM can still return a
+        comma-formatted string (e.g. "1,234") for a high-scoring story -
+        strip anything that isn't a digit rather than letting int() raise
+        and revert the whole refresh() call over a value that's informational
+        only, not part of consensus."""
+        digits = "".join(ch for ch in str(raw) if ch.isdigit())
+        return int(digits) if digits else 0
 
     @gl.public.write
     def refresh(self) -> None:
@@ -104,7 +118,7 @@ This result should be perfectly parsable by a JSON parser without errors.
 
         result = self._consensus_leader()
         headline = str(result.get("headline", "")).strip()
-        points = int(result.get("points", 0))
+        points = self._parse_points(result.get("points", 0))
 
         if not headline:
             raise gl.vm.UserError("Could not identify a current #1 story")

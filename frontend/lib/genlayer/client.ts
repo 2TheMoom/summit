@@ -6,7 +6,13 @@ import { getGenLayerChain } from "./chains";
 
 // GenLayer Network Configuration (from environment variables with fallbacks)
 // Defaults target Bradbury testnet, where Summit is deployed.
-export const GENLAYER_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_GENLAYER_CHAIN_ID || "4221");
+//
+// Chain ID is derived from getGenLayerChain() (not parsed independently from
+// the raw env var) so the wallet-network-switching logic below and the
+// actual read/write client (built from getGenLayerChain() in Summit.ts)
+// can never disagree about which chain is active - an unrecognized
+// NEXT_PUBLIC_GENLAYER_CHAIN_ID falls back to Bradbury in both places.
+export const GENLAYER_CHAIN_ID = getGenLayerChain().id;
 export const GENLAYER_CHAIN_ID_HEX = `0x${GENLAYER_CHAIN_ID.toString(16).toUpperCase()}`;
 
 export const GENLAYER_NETWORK = {

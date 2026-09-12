@@ -162,3 +162,24 @@ def test_refresh_with_no_identifiable_leader_fails(direct_vm, direct_deploy):
         contract.refresh()
 
     assert contract.get_current_champion()["headline"] == ""
+
+
+def test_refresh_tolerates_comma_formatted_points(direct_vm, direct_deploy):
+    """An LLM can report a high-scoring story's points as "1,234" despite
+    the prompt asking for a plain integer - this must not crash refresh()
+    with an uncaught ValueError from int()."""
+    contract = direct_deploy(CONTRACT)
+    direct_vm.warp(T0)
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(
+        r"news\.ycombinator\.com",
+        {"status": 200, "body": "Hacker News\n1. A huge story - 1,234 points\n"},
+    )
+    direct_vm.mock_llm(
+        r".*Hacker News's live front page.*",
+        json.dumps({"headline": "A huge story", "points": "1,234"}),
+    )
+
+    contract.refresh()
+
+    assert contract.get_current_champion()["points"] == 1234
