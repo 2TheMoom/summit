@@ -32,7 +32,7 @@ identical either way; only the mirrored source changed.
 
 ## Live deployment
 Deployed and verified on **GenLayer Bradbury Testnet** (chain ID 4221):
-- **Contract:** [`0x8483b855f34d84C2E6777a330F8882A50cb0fCB2`](https://explorer-bradbury.genlayer.com/address/0x8483b855f34d84C2E6777a330F8882A50cb0fCB2)
+- **Contract:** [`0xa4C55a5ca99af26b466785Bbc381D307830DdA05`](https://explorer-bradbury.genlayer.com/address/0xa4C55a5ca99af26b466785Bbc381D307830DdA05)
 - Verified via 10 passing direct-mode tests (`pytest tests/direct/`), covering
   first-time crowning, same-titleholder point refreshes, handoffs with
   history archiving, the refresh cooldown, and the no-identifiable-leader
