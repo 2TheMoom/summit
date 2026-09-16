@@ -37,32 +37,33 @@ Deployed on **GenLayer Bradbury Testnet** (chain ID 4221):
   first-time crowning, same-titleholder point refreshes, handoffs with
   history archiving, the refresh cooldown, the no-identifiable-leader guard,
   and tolerant parsing of a comma-formatted point total.
-- An earlier deployment's `refresh()` did reach full validator consensus
-  live and correctly identified the real current #1 Hacker News story - see
-  "A note on live consensus stability" below for what changed after the
-  code-review redeploy and what's still worth re-confirming.
+- Verified live end-to-end on this exact deployment: `refresh()` reached full
+  validator majority (`AGREE`, 3/5 validators) and correctly crowned the real
+  current #1 Hacker News story on-chain - `get_current_champion()` returned
+  `{ headline: "Introducing System One Models and Jev (typesafe.ai)", points:
+  1250, since: 1789544963 }`, matching the live page at call time.
 
 ### A note on live consensus stability
-While live-testing `refresh()` against the current (post-code-review)
-deployment, two consecutive calls finished as `NO_MAJORITY` and
+Live-testing wasn't perfectly smooth on the way here. Two earlier calls
+against this same deployment finished as `NO_MAJORITY` and
 `VALIDATORS_TIMEOUT` rather than a clean `AGREE`, despite direct-mode tests
 passing and the transaction data showing the contract logic itself executing
-correctly (`FINISHED_WITH_RETURN`, no exception) - in one case, two of five
-validators independently computed and agreed on the identical result
-(`"Show HN: Make your first edit to OpenStreetMap"`), but two others timed
-out and one hit `DETERMINISTIC_VIOLATION`, short of a majority. Every plain
-read call made during the same window also hit raw RPC connect-timeouts, so
-this looks like broader Bradbury testnet degradation on the night of
-2026-09-13 rather than a Summit-specific defect - but it's also a real,
-disclosable interaction worth naming: `_consensus_leader`'s validator check
-re-renders the live page a second time to confirm internal consistency, and
-a source that changes on a timescale of minutes (unlike a fixed on-chain
-fact) has a real chance of returning a different snapshot on that second
-render if a round runs slow, which reads to GenVM as a deterministic
-violation rather than a benign timing artifact. This hasn't been
-distinguished with certainty from plain network flakiness - re-verifying
-`refresh()` under normal network conditions is the natural next step before
-relying on this deployment for a demo.
+correctly (`FINISHED_WITH_RETURN`, no exception) both times - in the
+`NO_MAJORITY` case, two of five validators independently computed and agreed
+on the identical result (`"Show HN: Make your first edit to OpenStreetMap"`),
+but two others timed out and one hit `DETERMINISTIC_VIOLATION`, short of a
+majority. Every plain read call made during that window also hit raw RPC
+connect-timeouts, and GenLayer Studio's own hosted environment failed to
+deploy its own unmodified reference contract the same night - consistent
+with broader Bradbury testnet degradation on 2026-09-13/14 rather than a
+Summit-specific defect, and borne out by the clean success above once
+network conditions recovered. The theoretical mechanism worth naming
+regardless: `_consensus_leader`'s validator check re-renders the live page a
+second time to confirm internal consistency, and a source that changes on a
+timescale of minutes (unlike a fixed on-chain fact) has some chance of
+returning a different snapshot on that second render if a round runs slow -
+plausible under degraded network conditions, though not what was observed
+here once the network was healthy.
 
 ## What's included
 - `contracts/summit.py` — the Summit Intelligent Contract
