@@ -42,6 +42,12 @@ Deployed on **GenLayer Bradbury Testnet** (chain ID 4221):
   current #1 Hacker News story on-chain - `get_current_champion()` returned
   `{ headline: "Introducing System One Models and Jev (typesafe.ai)", points:
   1250, since: 1789544963 }`, matching the live page at call time.
+- Re-verified again on 2026-09-23, over a week later: `get_current_champion()`
+  still reads correctly (contract state holds up over time with no drift or
+  corruption), and a fresh `refresh()` call succeeded - `AGREE`, correctly
+  crowning `"Fixing the Portobello Police Station Clock"` (148 points) as the
+  new live #1 story, with the full succession history preserved. See the note
+  below for what that attempt actually took.
 
 ### A note on live consensus stability
 Live-testing wasn't perfectly smooth on the way here. Two earlier calls
@@ -64,6 +70,17 @@ timescale of minutes (unlike a fixed on-chain fact) has some chance of
 returning a different snapshot on that second render if a round runs slow -
 plausible under degraded network conditions, though not what was observed
 here once the network was healthy.
+
+**Update, 2026-09-23:** the same pattern recurred and resolved the same way.
+Four consecutive `refresh()` attempts that night came back `VALIDATORS_TIMEOUT`
+(a majority of validators timing out on the render step, one or two still
+independently agreeing where they did complete). A fifth attempt eventually
+reached `ACCEPTED`/`AGREE` after a longer-than-usual consensus round, and
+correctly crowned the real live story. Nothing about the contract changed
+between attempts one and five - this is consistent, recurring evidence of
+transient Bradbury-side render capacity issues rather than a Summit-specific
+defect, and the pattern of "degrades, then clears on its own without a code
+change" now has two independent occurrences a week and a half apart.
 
 ## What's included
 - `contracts/summit.py` — the Summit Intelligent Contract
