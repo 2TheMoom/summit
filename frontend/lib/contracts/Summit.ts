@@ -41,6 +41,14 @@ function decodePodiumEvent(raw: any): PodiumEvent {
   };
 }
 
+/** What each way a verification can end without a majority means, in plain words. Nothing is written in any of them. */
+const REFRESH_FAILED: Record<string, string> = {
+  LEADER_TIMEOUT: "The validators' leader could not read the page in time. Nothing was changed on-chain. This happens often on the testnet: try again in a moment.",
+  VALIDATORS_TIMEOUT: "The validators did not finish in time. Nothing was changed on-chain. Try again in a moment.",
+  UNDETERMINED: "The validators could not agree on the same top three this time, so nothing was changed. Try again.",
+  CANCELED: "This transaction was cancelled. Nothing was changed.",
+};
+
 /**
  * Summit contract class - a live mirror of Hacker News's top 3 front-page
  * stories, tracked as three independent seats. refresh() is the only
@@ -137,14 +145,29 @@ class Summit {
 
     onSubmitted?.(txHash);
 
-    try {
-      await this.client.waitForTransactionReceipt({ hash: txHash, status: "ACCEPTED" as any, retries: 40, interval: 5000 });
-      return txHash;
-    } catch (error) {
-      console.error("Error confirming refresh transaction:", error);
-      throw new Error(
-        `Transaction ${txHash} was submitted but confirmation timed out. It may still complete - check the explorer.`
-      );
+    // Poll the transaction itself, so a validator timeout is reported as what it is (nothing changed, try again)
+    // instead of a vague "confirmation timed out" after minutes of waiting.
+    const deadline = Date.now() + 10 * 60_000;
+    for (;;) {
+      let tx: any = null;
+      try {
+        tx = await this.client.getTransaction({ hash: txHash });
+      } catch (error) {
+        console.error("Error reading the refresh transaction (will retry):", error);
+      }
+      const status = String(tx?.statusName ?? "");
+      if (status === "ACCEPTED" || status === "FINALIZED") {
+        const exec = String(tx?.txExecutionResultName ?? "");
+        if (exec && exec !== "FINISHED_WITH_RETURN") {
+          throw new Error(`The contract refused this verification (${exec}), so nothing changed. A verification right after another one is refused: wait 5 minutes. Transaction ${txHash}.`);
+        }
+        return txHash;
+      }
+      if (REFRESH_FAILED[status]) throw new Error(`${REFRESH_FAILED[status]} Transaction ${txHash}.`);
+      if (Date.now() > deadline) {
+        throw new Error(`Transaction ${txHash} is still being worked on after 10 minutes. It may still complete: check the explorer before trying again.`);
+      }
+      await new Promise((r) => setTimeout(r, 5000));
     }
   }
 }
