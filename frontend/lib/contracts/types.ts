@@ -2,13 +2,15 @@
  * TypeScript types for the GenLayer Summit contract
  */
 
-export interface Champion {
+export interface Seat {
+  rank: number;
   headline: string;
   points: string;
   since: string;
 }
 
-export interface TitleHolder {
+export interface PodiumEvent {
+  rank: number;
   headline: string;
   points: string;
   since: string;

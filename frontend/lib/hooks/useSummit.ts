@@ -6,7 +6,7 @@ import Summit from "../contracts/Summit";
 import { getContractAddress, getStudioUrl } from "../genlayer/client";
 import { useWallet } from "../genlayer/wallet";
 import { success, error, configError } from "../utils/toast";
-import type { Champion, TitleHolder } from "../contracts/types";
+import type { Seat, PodiumEvent } from "../contracts/types";
 
 export function useSummitContract(): Summit | null {
   const { address } = useWallet();
@@ -28,12 +28,12 @@ export function useSummitContract(): Summit | null {
   return contract;
 }
 
-export function useCurrentChampion() {
+export function usePodium() {
   const contract = useSummitContract();
 
-  return useQuery<Champion, Error>({
-    queryKey: ["currentChampion"],
-    queryFn: () => (contract ? contract.getCurrentChampion() : Promise.resolve({ headline: "", points: "0", since: "0" })),
+  return useQuery<Seat[], Error>({
+    queryKey: ["podium"],
+    queryFn: () => (contract ? contract.getPodium() : Promise.resolve([])),
     refetchOnWindowFocus: true,
     staleTime: 2000,
     enabled: !!contract,
@@ -43,7 +43,7 @@ export function useCurrentChampion() {
 export function useHistory() {
   const contract = useSummitContract();
 
-  return useQuery<TitleHolder[], Error>({
+  return useQuery<PodiumEvent[], Error>({
     queryKey: ["history"],
     queryFn: () => (contract ? contract.getHistory() : Promise.resolve([])),
     refetchOnWindowFocus: true,
@@ -81,11 +81,11 @@ export function useRefresh() {
       return contract.refresh(feePreset, setPendingTxHash);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentChampion"] });
+      queryClient.invalidateQueries({ queryKey: ["podium"] });
       queryClient.invalidateQueries({ queryKey: ["history"] });
       queryClient.invalidateQueries({ queryKey: ["lastRefreshAt"] });
       setIsRefreshing(false);
-      success("Verified!", { description: "The title now reflects the live standings." });
+      success("Verified!", { description: "The podium now reflects the live standings." });
     },
     onError: (err: any) => {
       console.error("Error refreshing:", err);

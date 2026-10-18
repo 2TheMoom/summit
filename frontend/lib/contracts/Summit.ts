@@ -1,6 +1,6 @@
 import { createClient } from "genlayer-js";
 import { getGenLayerChain } from "../genlayer/chains";
-import type { Champion, TitleHolder } from "./types";
+import type { Seat, PodiumEvent } from "./types";
 import {
   estimateWriteFeePreset,
   feePresetToTransactionFees,
@@ -19,18 +19,20 @@ function toPlainObject(raw: any): Record<string, any> {
   return obj;
 }
 
-function decodeChampion(raw: any): Champion {
+function decodeSeat(raw: any): Seat {
   const obj = toPlainObject(raw);
   return {
+    rank: Number(obj.rank ?? 0),
     headline: String(obj.headline ?? ""),
     points: String(obj.points ?? "0"),
     since: String(obj.since ?? "0"),
   };
 }
 
-function decodeTitleHolder(raw: any): TitleHolder {
+function decodePodiumEvent(raw: any): PodiumEvent {
   const obj = toPlainObject(raw);
   return {
+    rank: Number(obj.rank ?? 0),
     headline: String(obj.headline ?? ""),
     points: String(obj.points ?? "0"),
     since: String(obj.since ?? "0"),
@@ -39,9 +41,9 @@ function decodeTitleHolder(raw: any): TitleHolder {
 }
 
 /**
- * Summit contract class - a live mirror of GenLayer's own points
- * leaderboard. refresh() is the only write method, takes no arguments, and
- * moves no value.
+ * Summit contract class - a live mirror of Hacker News's top 3 front-page
+ * stories, tracked as three independent seats. refresh() is the only
+ * write method, takes no arguments, and moves no value.
  */
 class Summit {
   private contractAddress: `0x${string}`;
@@ -66,11 +68,12 @@ class Summit {
   }
 
   /**
-   * refresh() renders a live, JS-heavy SPA and runs an LLM extraction on
-   * top of it - a genuinely resource-intensive nondet operation. "high"
-   * (more rotations/appeal rounds) is the sensible default here, not
-   * "standard" - a thin fee budget risks a leader timeout on this specific
-   * page.
+   * refresh() renders a live page and runs a 3-entry LLM extraction on top
+   * of it, then requires all three ranks to match between leader and
+   * validators - a heavier nondet operation than a single-entry extraction,
+   * and a stricter consensus bar. "high" (more rotations/appeal rounds) is
+   * the sensible default, not "standard" - a thin fee budget risks a
+   * leader timeout on this specific call.
    */
   async estimateRefreshFees(level: FeePresetLevel = "high"): Promise<FeePresetEstimate | undefined> {
     return estimateWriteFeePreset(
@@ -80,18 +83,18 @@ class Summit {
     );
   }
 
-  async getCurrentChampion(): Promise<Champion> {
-    const result = await this.client.readContract({
-      address: this.contractAddress, functionName: "get_current_champion", args: [],
+  async getPodium(): Promise<Seat[]> {
+    const result: any = await this.client.readContract({
+      address: this.contractAddress, functionName: "get_podium", args: [],
     });
-    return decodeChampion(result);
+    return Array.isArray(result) ? result.map(decodeSeat) : [];
   }
 
-  async getHistory(): Promise<TitleHolder[]> {
+  async getHistory(): Promise<PodiumEvent[]> {
     const result: any = await this.client.readContract({
       address: this.contractAddress, functionName: "get_history", args: [],
     });
-    return Array.isArray(result) ? result.map(decodeTitleHolder) : [];
+    return Array.isArray(result) ? result.map(decodePodiumEvent) : [];
   }
 
   async getLastRefreshAt(): Promise<string> {

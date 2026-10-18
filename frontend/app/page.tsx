@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { useCurrentChampion, useHistory, useLastRefreshAt, useRefresh } from "@/lib/hooks/useSummit";
+import { usePodium, useHistory, useLastRefreshAt, useRefresh } from "@/lib/hooks/useSummit";
 import { useWallet } from "@/lib/genlayer/wallet";
 import { getTxExplorerUrl } from "@/lib/genlayer/chains";
 import { error as toastError } from "@/lib/utils/toast";
@@ -29,16 +29,22 @@ function useNowSeconds() {
   return now;
 }
 
+const RANK_LABEL: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
+
 export default function HomePage() {
-  const { data: champion, isLoading: championLoading } = useCurrentChampion();
+  const { data: podium, isLoading: podiumLoading } = usePodium();
   const { data: history } = useHistory();
   const { data: lastRefreshAt } = useLastRefreshAt();
   const { address } = useWallet();
   const { refresh, isRefreshing, pendingTxHash } = useRefresh();
   const now = useNowSeconds();
 
-  const hasChampion = !!champion?.headline;
-  const since = champion?.since ? parseInt(champion.since, 10) : 0;
+  const seats = podium && podium.length === 3 ? podium : [
+    { rank: 1, headline: "", points: "0", since: "0" },
+    { rank: 2, headline: "", points: "0", since: "0" },
+    { rank: 3, headline: "", points: "0", since: "0" },
+  ];
+  const hasPodium = !!seats[0].headline;
   const lastRefresh = lastRefreshAt ? parseInt(lastRefreshAt, 10) : 0;
 
   const handleVerify = () => {
@@ -56,7 +62,7 @@ export default function HomePage() {
       <main className="flex-grow pt-24 pb-16">
         <div className="max-w-3xl mx-auto px-5 md:px-7">
           {/* Hero */}
-          <section className="brand-card relative overflow-hidden text-center px-6 sm:px-8 py-10 sm:py-11">
+          <section className="brand-card relative overflow-hidden px-5 sm:px-8 py-10 sm:py-11 text-center">
             <div
               aria-hidden
               className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-36 w-[420px] h-[420px] rounded-full"
@@ -76,31 +82,42 @@ export default function HomePage() {
               </svg>
             </div>
 
-            <div className="relative eyebrow">Current Titleholder</div>
+            <div className="relative eyebrow">The Podium</div>
 
-            {championLoading ? (
+            {podiumLoading ? (
               <div className="relative mt-5 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : hasChampion ? (
-              <>
-                <div className="relative mt-2 text-xl sm:text-2xl font-bold font-[family-name:var(--font-display)] max-w-[46ch] mx-auto text-balance">
-                  {champion!.headline}
-                </div>
-                <div className="relative mt-1.5 font-mono text-4xl sm:text-5xl font-semibold text-primary tabular">
-                  {champion!.points}
-                  <span className="text-base sm:text-lg text-muted-foreground font-normal ml-2">points</span>
-                </div>
-                <div className="relative mt-4 flex flex-wrap justify-center gap-x-6 gap-y-1.5 font-mono text-xs text-muted-foreground">
-                  <span>HOLDING SINCE <b className="text-foreground font-medium">{formatDuration(since, now)} ago</b></span>
-                  {lastRefresh > 0 && (
-                    <span>LAST VERIFIED <b className="text-foreground font-medium">{formatDuration(lastRefresh, now)} ago</b></span>
-                  )}
-                </div>
-              </>
+            ) : hasPodium ? (
+              <div className="relative mt-5 grid sm:grid-cols-3 gap-3 items-stretch text-left">
+                {seats.map((seat) => {
+                  const isFirst = seat.rank === 1;
+                  return (
+                    <div
+                      key={seat.rank}
+                      className={`rounded-xl border p-4 flex flex-col ${isFirst ? "sm:order-2 border-primary/50 bg-primary/5" : "sm:pt-6"} ${seat.rank === 2 ? "sm:order-1" : ""} ${seat.rank === 3 ? "sm:order-3" : ""}`}
+                      style={{ borderColor: isFirst ? undefined : "var(--border)" }}
+                    >
+                      <div className={`font-mono text-[0.68rem] tracking-wider ${isFirst ? "text-primary" : "text-muted-foreground"}`}>
+                        {RANK_LABEL[seat.rank]}
+                      </div>
+                      <div className={`mt-1.5 font-[family-name:var(--font-display)] font-bold text-balance ${isFirst ? "text-base" : "text-sm"}`}>
+                        {seat.headline || "—"}
+                      </div>
+                      <div className={`mt-auto pt-3 font-mono tabular ${isFirst ? "text-2xl text-primary" : "text-lg"}`}>
+                        {seat.points}
+                        <span className="text-xs text-muted-foreground font-normal ml-1">pts</span>
+                      </div>
+                      <div className="mt-1 font-mono text-[0.66rem] text-muted-foreground">
+                        {formatDuration(parseInt(seat.since, 10), now)} in this seat
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="relative mt-3 text-muted-foreground text-sm max-w-[42ch] mx-auto">
-                Not yet verified on-chain. Be the first to check who currently holds #1.
+                Not yet verified on-chain. Be the first to check the current top 3.
               </div>
             )}
 
@@ -108,6 +125,11 @@ export default function HomePage() {
               <Button onClick={handleVerify} variant="gradient" disabled={isRefreshing} size="lg">
                 {isRefreshing ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Verifying...</>) : "Verify Now"}
               </Button>
+              {lastRefresh > 0 && !isRefreshing && (
+                <div className="mt-3 font-mono text-xs text-muted-foreground">
+                  LAST VERIFIED <b className="text-foreground font-medium">{formatDuration(lastRefresh, now)} ago</b>
+                </div>
+              )}
               {isRefreshing && (
                 <div className="mt-3 font-mono text-xs text-muted-foreground">
                   {pendingTxHash ? (
@@ -129,7 +151,7 @@ export default function HomePage() {
           <section className="mt-10">
             <h2 className="text-base font-bold">How Summit Verifies</h2>
             <p className="mt-1.5 text-sm text-muted-foreground max-w-[62ch]">
-              No claim, no submission, nothing for a caller to manipulate - <code className="font-mono text-foreground bg-muted px-1 py-0.5 rounded">refresh()</code> takes zero parameters. It just re-checks the one canonical source.
+              No claim, no submission, nothing for a caller to manipulate - <code className="font-mono text-foreground bg-muted px-1 py-0.5 rounded">refresh()</code> takes zero parameters. All three seats are consensus-critical: a validator must independently read the identical #1, #2, and #3 to agree.
             </p>
             <div className="mt-4 grid sm:grid-cols-3 gap-3.5">
               <div className="brand-card p-4">
@@ -141,16 +163,16 @@ export default function HomePage() {
               </div>
               <div className="brand-card p-4">
                 <div className="eyebrow mb-2">2</div>
-                <div className="text-sm font-semibold">Read what&apos;s #1</div>
+                <div className="text-sm font-semibold">Read the top 3</div>
                 <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                  Each validator&apos;s model extracts the current top story and its points, independently of the others.
+                  Each validator&apos;s model independently extracts all three ranked stories and their points.
                 </p>
               </div>
               <div className="brand-card p-4">
                 <div className="eyebrow mb-2">3</div>
                 <div className="text-sm font-semibold">Reach consensus</div>
                 <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                  The equivalence principle requires validators to agree before state updates.
+                  The equivalence principle requires all three ranks to match before the podium updates.
                 </p>
               </div>
             </div>
@@ -160,23 +182,28 @@ export default function HomePage() {
           <section className="mt-10 pb-4">
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <h2 className="text-base font-bold">Succession</h2>
-              <span className="eyebrow">{history?.length ?? 0} past titleholder{history?.length === 1 ? "" : "s"}</span>
+              <span className="eyebrow">{history?.length ?? 0} past seat{history?.length === 1 ? "" : "s"} vacated</span>
             </div>
             <div className="mt-4 relative pl-7">
               <div className="absolute left-2 top-1.5 bottom-1.5 w-px bg-border" />
 
-              {hasChampion && (
-                <div className="relative pb-6">
+              {hasPodium && [...seats].reverse().map((seat) => (
+                <div key={`current-${seat.rank}`} className="relative pb-6">
                   <span className="absolute -left-7 top-0.5 w-[17px] h-[17px] text-primary">
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2v16M4 3h11l-2.5 3L15 9H4" /></svg>
                   </span>
                   <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                    <span className="font-semibold text-sm text-primary">{champion!.headline}</span>
-                    <span className="font-mono text-xs text-muted-foreground tabular">{champion!.points} points</span>
+                    <span className="font-semibold text-sm text-primary">
+                      <span className="font-mono text-[0.66rem] text-muted-foreground mr-1.5">{RANK_LABEL[seat.rank]}</span>
+                      {seat.headline}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground tabular">{seat.points} points</span>
                   </div>
-                  <div className="font-mono text-[0.7rem] text-muted-foreground mt-0.5">Holding · {formatDuration(since, now)} and counting</div>
+                  <div className="font-mono text-[0.7rem] text-muted-foreground mt-0.5">
+                    Holding · {formatDuration(parseInt(seat.since, 10), now)} and counting
+                  </div>
                 </div>
-              )}
+              ))}
 
               {history && history.length > 0 ? (
                 [...history].reverse().map((h, i) => (
@@ -185,7 +212,10 @@ export default function HomePage() {
                       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 2v16M4 3h11l-2.5 3L15 9H4" /></svg>
                     </span>
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                      <span className="font-semibold text-sm">{h.headline}</span>
+                      <span className="font-semibold text-sm">
+                        <span className="font-mono text-[0.66rem] text-muted-foreground mr-1.5">{RANK_LABEL[h.rank] ?? `#${h.rank}`}</span>
+                        {h.headline}
+                      </span>
                       <span className="font-mono text-xs text-muted-foreground tabular">{h.points} points</span>
                     </div>
                     <div className="font-mono text-[0.7rem] text-muted-foreground mt-0.5">
@@ -193,8 +223,8 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))
-              ) : !hasChampion ? (
-                <p className="text-sm text-muted-foreground">No history yet - the first verification crowns the inaugural titleholder.</p>
+              ) : !hasPodium ? (
+                <p className="text-sm text-muted-foreground">No history yet - the first verification fills the inaugural podium.</p>
               ) : null}
             </div>
           </section>
