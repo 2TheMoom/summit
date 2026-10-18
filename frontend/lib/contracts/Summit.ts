@@ -1,4 +1,5 @@
 import { createClient } from "genlayer-js";
+import { getEthereumProvider } from "../genlayer/client";
 import { getGenLayerChain } from "../genlayer/chains";
 import type { Seat, PodiumEvent } from "./types";
 import {
@@ -55,7 +56,12 @@ class Summit {
     this.rpcUrl = rpcUrl;
 
     const config: any = { chain: getGenLayerChain() };
-    if (address) config.account = address as `0x${string}`;
+    if (address) {
+      config.account = address as `0x${string}`;
+      // sign with MetaMask's own provider, not whichever wallet owns window.ethereum (several can be installed)
+      const provider = getEthereumProvider();
+      if (provider) config.provider = provider;
+    }
     if (rpcUrl) config.endpoint = rpcUrl;
 
     this.client = createClient(config);
@@ -63,6 +69,8 @@ class Summit {
 
   updateAccount(address: string): void {
     const config: any = { chain: getGenLayerChain(), account: address as `0x${string}` };
+    const provider = getEthereumProvider();
+    if (provider) config.provider = provider;
     if (this.rpcUrl) config.endpoint = this.rpcUrl;
     this.client = createClient(config);
   }
