@@ -2,12 +2,22 @@
 
 ## About
 A GenLayer "living state" Intelligent Contract with no claimant, no dispute,
-and no payout - it just continuously mirrors one real-world fact: whichever
-story is currently ranked #1 on Hacker News's live front page. Anyone can
-call `refresh()`, which takes zero parameters. Validators independently
-render the one canonical page, extract who's currently at the top, and reach
-consensus via GenLayer's equivalence principle before state updates. Past
-titleholders are archived on-chain as a succession history.
+and no payout - it just continuously mirrors one real-world fact: the three
+stories currently ranked #1, #2 and #3 on Hacker News's live front page (the
+**Podium**). Anyone can call `refresh()`, which takes zero parameters.
+Validators independently render the one canonical page, extract the top
+three, and must independently read the identical three headlines to reach
+consensus via GenLayer's equivalence principle before state updates. Each
+rank is its own seat: when a story moves between ranks, both seats record a
+real handoff, and every change is archived on-chain as a `PodiumEvent`
+(rank, headline, points, since, until). `get_podium()` returns the three
+current seats.
+
+The first version of this contract mirrored only #1 (`get_current_champion`,
+one titleholder history); it is the deployment listed second under "Live
+deployment" and its accepted submission still stands. The Podium is the
+second version: new contract functionality, a new deployment and a new
+frontend, with 12 direct-mode tests.
 
 Unlike an adjudicated claim or an escrow-with-verdict, there's nothing here
 for a caller to submit or manipulate - `refresh()` only ever asks "what does
@@ -32,7 +42,8 @@ identical either way; only the mirrored source changed.
 
 ## Live deployment
 Deployed on **GenLayer Bradbury Testnet** (chain ID 4221):
-- **Contract:** [`0xa4C55a5ca99af26b466785Bbc381D307830DdA05`](https://explorer-bradbury.genlayer.com/address/0xa4C55a5ca99af26b466785Bbc381D307830DdA05)
+- **Podium (current):** [`0x4CA2Af964BDEa09641574730ca336a1f6f9770e0`](https://explorer-bradbury.genlayer.com/address/0x4CA2Af964BDEa09641574730ca336a1f6f9770e0), the contract the live app reads (https://summit-frontend-chi.vercel.app). `pytest tests/direct/` runs 12 tests.
+- **Original #1-only version:** [`0xa4C55a5ca99af26b466785Bbc381D307830DdA05`](https://explorer-bradbury.genlayer.com/address/0xa4C55a5ca99af26b466785Bbc381D307830DdA05), the deployment the verification notes below were recorded on.
 - Verified via 11 passing direct-mode tests (`pytest tests/direct/`), covering
   first-time crowning, same-titleholder point refreshes, handoffs with
   history archiving, the refresh cooldown, the no-identifiable-leader guard,
