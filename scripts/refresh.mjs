@@ -11,6 +11,6 @@ const client = createClient({ chain: testnetBradbury, account: createAccount(wal
 const plain = (x) => (x instanceof Map ? Object.fromEntries([...x].map(([k, v]) => [k, plain(v)])) : Array.isArray(x) ? x.map(plain) : typeof x === "bigint" ? x.toString() : x);
 const hash = await client.writeContract({ address: SUMMIT, functionName: "refresh", args: [] });
 console.log("tx", hash);
-const r = await client.waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 120, interval: 5000 });
+const r = await client.waitForTransactionReceipt({ hash, status: "ACCEPTED", retries: 600, interval: 5000 });
 console.log("status", r.statusName, "exec", r.txExecutionResultName, "result", r.resultName);
 console.log("podium", JSON.stringify(plain(await client.readContract({ address: SUMMIT, functionName: "get_podium", args: [] }))));

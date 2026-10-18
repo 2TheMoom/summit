@@ -42,7 +42,8 @@ identical either way; only the mirrored source changed.
 
 ## Live deployment
 Deployed on **GenLayer Bradbury Testnet** (chain ID 4221):
-- **Podium (current):** [`0x4CA2Af964BDEa09641574730ca336a1f6f9770e0`](https://explorer-bradbury.genlayer.com/address/0x4CA2Af964BDEa09641574730ca336a1f6f9770e0), the contract the live app reads (https://summit-frontend-chi.vercel.app). `pytest tests/direct/` runs 12 tests.
+- **Podium (current):** [`0x21e9107F9DE4F600e6288F90c082BdA96A588e65`](https://explorer-bradbury.genlayer.com/address/0x21e9107F9DE4F600e6288F90c082BdA96A588e65), the contract the live app reads (https://summit-frontend-chi.vercel.app). `pytest tests/direct/` runs 12 tests. Deployed 2026-10-18 with `scripts/deploy.mjs`.
+- **Earlier Podium deployment, retired:** [`0x4CA2Af964BDEa09641574730ca336a1f6f9770e0`](https://explorer-bradbury.genlayer.com/address/0x4CA2Af964BDEa09641574730ca336a1f6f9770e0). Its transaction queue is blocked by seven `refresh()` calls from September that were never processed, so nothing sent to it can run (see below).
 - **Original #1-only version:** [`0xa4C55a5ca99af26b466785Bbc381D307830DdA05`](https://explorer-bradbury.genlayer.com/address/0xa4C55a5ca99af26b466785Bbc381D307830DdA05), the deployment the verification notes below were recorded on.
 - Verified via 11 passing direct-mode tests (`pytest tests/direct/`), covering
   first-time crowning, same-titleholder point refreshes, handoffs with
@@ -59,6 +60,22 @@ Deployed on **GenLayer Bradbury Testnet** (chain ID 4221):
   crowning `"Fixing the Portobello Police Station Clock"` (148 points) as the
   new live #1 story, with the full succession history preserved. See the note
   below for what that attempt actually took.
+
+### Podium: live verification on the current deployment (2026-10-18)
+`scripts/refresh-until.mjs` sent `refresh()` to the fresh deployment until one attempt was accepted, and logged every attempt:
+
+| Attempt | Result |
+|---|---|
+| 1 to 4 | `LEADER_TIMEOUT` (the leader could not produce a proposal in time) |
+| 5 | `UNDETERMINED`, no majority |
+| 6 | `VALIDATORS_TIMEOUT` |
+| 7 | `LEADER_TIMEOUT` |
+| 8 | `VALIDATORS_TIMEOUT` |
+| 9 | [`0x557ac66ca3`](https://explorer-bradbury.genlayer.com/tx/0x557ac66ca3ebd5741aa66b01dec3a062a730388bf15df7c27ba27afbab876938) `ACCEPTED`, `AGREE` |
+
+Attempt 9 filled all three seats from the live page (#1 "Bleached corals thrive within days when touching healthy neighbour", 375 points; #2 "Lean now ships with verified kernels", 55; #3 "Dam removals are bringing fish back across the northeastern United States", 233), and the live app shows them. Sixteen minutes from the first attempt to the accepted one. This is the same transient render and LLM-path pattern described below, not a contract defect.
+
+**What the retired deployment taught.** The earlier Podium contract looked healthy on every read but could not run a write: its queue showed seven `refresh()` transactions from September, all still `PENDING` and never voted on, ahead of any new one. A GenLayer contract processes its transactions in order, so a visitor pressing "Verify now" would have waited behind them indefinitely. Only the sender can cancel a pending transaction, so the fix was a fresh deployment with an empty queue. If a deployment's `refresh()` stays `PENDING` with no rounds started, look at its pending queue in the explorer before suspecting the network.
 
 ### A note on live consensus stability
 Live-testing wasn't perfectly smooth on the way here. Two earlier calls
